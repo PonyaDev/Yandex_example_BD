@@ -1,0 +1,97 @@
+--Запрос 1. Выведите номер, дату и общую стоимость заказов, которые были сделаны в прошлом месяце.
+SELECT orders.order_id, orders.order_date, SUM(cart.quantity * catalog.cost) AS total_cost
+FROM orders
+JOIN cart ON orders.order_id = cart.order_id
+JOIN catalog ON cart.product_article = catalog.product_article
+WHERE orders.order_date >= (CURRENT_DATE - INTERVAL '1 month')
+GROUP BY orders.order_id, orders.order_date
+ORDER BY orders.order_date DESC;
+
+--Запрос 2. Выведите ФИО покупателей, которые сделали более трех заказов в прошлом году, с указанием количества этих заказов.
+SELECT customer.fio, cart.quantity
+FROM customer
+JOIN orders ON customer.customer_id = orders.customer_id
+JOIN cart ON orders.order_id = cart.order_id
+WHERE cart.quantity >= 3 AND orders.order_date >= (CURRENT_DATE - INTERVAL '1 year')
+ORDER BY orders.order_date DESC;
+
+--Запрос 3. Выведите название, категорию и стоимость товаров, тип которых принадлежит к полу «мужской».
+SELECT catalog.product_name, product_type.product_type_name, catalog.cost
+FROM catalog
+JOIN product_type ON catalog.product_type_code = product_type.product_type_code
+WHERE product_type.gender = 'Male'
+ORDER BY catalog.product_name ASC;
+
+--Запрос 4. Выведите название, категорию и стоимость, самых дорогих женских и мужских футболок.
+SELECT catalog.product_name, product_type.product_type_name, product_type.gender, MAX(catalog.cost) as cost
+FROM catalog
+JOIN product_type ON catalog.product_type_code = product_type.product_type_code
+WHERE product_type.gender IN ('Male', 'Female')
+GROUP BY catalog.product_name, product_type.product_type_name, product_type.gender, catalog.cost
+ORDER BY catalog.cost DESC
+LIMIT 2;
+
+--Запрос 5. Выведите номер, дату и общую стоимость всех заказов, в которых присутствует товар из категории "платье".
+SELECT orders.order_id, orders.order_date, SUM(cart.quantity * catalog.cost) as cost
+FROM catalog
+JOIN product_type ON catalog.product_type_code = product_type.product_type_code
+JOIN cart ON catalog.product_article = cart.product_article
+JOIN orders ON cart.order_id = orders.order_id
+WHERE product_type.product_type_name = 'dress'
+GROUP BY orders.order_id, orders.order_date
+ORDER BY orders.order_date DESC
+
+--Запрос 6. Выведите ФИО и сумму заказов всех покупателей, которые никогда не делали заказов на сумму более 1500 рублей.
+SELECT fio, t_cost
+FROM (
+    SELECT customer.fio, SUM(cart.quantity * catalog.cost) as t_cost
+    FROM customer
+    LEFT JOIN orders ON customer.customer_id = orders.customer_id
+    LEFT JOIN cart ON orders.order_id = cart.order_id
+    LEFT JOIN catalog ON cart.product_article = catalog.product_article
+    GROUP BY customer.customer_id
+) subquery
+WHERE t_cost <= 1500
+ORDER BY t_cost ASC;
+
+--Запрос 7. Выведите название, категорию и количество проданных единиц всех товаров, которые были проданы хотя бы 1 раз в прошлом месяце.
+SELECT product_type.product_type_name, catalog.product_name, SUM(cart.quantity)
+FROM product_type
+JOIN catalog ON product_type.product_type_code = catalog.product_type_code
+JOIN cart ON catalog.product_article = cart.product_article
+JOIN orders ON cart.order_id = orders.order_id
+WHERE orders.order_date >= (CURRENT_DATE - INTERVAL '1 month')
+GROUP BY product_type.product_type_name, catalog.product_name
+ORDER BY SUM(cart.quantity) DESC;
+
+--Запрос 8. Выведите название и общую стоимость всех товаров категории, в которых общая стоимость всех товаров превышает 3000 рублей.
+SELECT product_type_name, total_cost
+FROM (
+	SELECT product_type.product_type_name, SUM(cart.quantity * catalog.cost) as total_cost
+	FROM product_type
+	JOIN catalog ON product_type.product_type_code = catalog.product_type_code
+	JOIN cart ON catalog.product_article = cart.product_article
+	GROUP BY product_type.product_type_name
+) subquery
+WHERE total_cost >=3000
+ORDER BY total_cost ASC;
+
+--Запрос 9. Выведите номер, дату и общую стоимость всех заказов, в которых присутствуют товары с ценой более 800 рублей.
+SELECT orders.order_id, orders.order_date, SUM(cart.quantity * catalog.cost) as total_cost
+FROM orders
+JOIN cart ON orders.order_id = cart.order_id
+JOIN catalog ON cart.product_article = catalog.product_article
+JOIN product_type ON catalog.product_type_code = product_type.product_type_code
+WHERE catalog.cost >= 800
+GROUP BY orders.order_id, orders.order_date, catalog.cost
+ORDER BY total_cost ASC;
+
+--Запрос 10. Выведите ФИО, количество заказов и общую стоимость заказов покупателей, которые делали заказы в прошлом месяце.
+SELECT customer.fio, SUM(cart.quantity) AS count_price, SUM(cart.quantity * catalog.cost) AS total_cost
+FROM customer
+JOIN orders ON customer.customer_id = orders.customer_id
+JOIN cart ON orders.order_id = cart.order_id
+JOIN catalog ON cart.product_article = catalog.product_article
+WHERE orders.order_date >= (CURRENT_DATE - INTERVAL '1 month')
+GROUP BY customer.fio, orders.order_date, catalog.cost
+ORDER BY total_cost ASC;
